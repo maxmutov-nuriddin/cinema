@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LUMIERE GRAND CINEMA | One Auditorium. Every Angle.</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="/css/style.css">
+
+  <!-- Three.js (r128) & OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+  <!-- WebGL 3D Canvas -->
+  <div id="webgl-container"></div>
+
+  <!-- Parallax Overlays -->
+  <div class="vignette-overlay"></div>
+
+  <!-- 3D Seat Tooltip -->
+  <div id="seat-tooltip" class="seat-hover-tooltip"></div>
+
+  <!-- Main Lumiere UI HUD -->
+  <div class="ui-layer">
+    
+    <!-- Top Header Navigation Bar (Exact match from video) -->
+    <header class="lumiere-top-bar">
+      <!-- Brand Logo -->
+      <div class="brand-block interactive">
+        <h1 class="brand-title">LUMIERE</h1>
+        <span class="brand-sub">GRAND CINEMA</span>
+      </div>
+
+      <!-- Center Tagline -->
+      <div class="header-tagline">
+        One auditorium. Every angle.
+      </div>
+
+      <!-- Top Right Controls -->
+      <div class="header-actions interactive">
+        <button id="tour-auditorium-btn" class="header-btn" title="Automated tour of auditorium">
+          <span>🔄</span>
+          <span>Tour the auditorium</span>
+        </button>
+
+        <button id="fullscreen-btn" class="header-icon-btn" title="Toggle Fullscreen">
+          ⛶
+        </button>
+
+        <button id="sound-toggle-btn" class="header-icon-btn" title="Toggle Sound">
+          🔇
+        </button>
+      </div>
+    </header>
+
+    <!-- Seated POV Notification & Exit Banner -->
+    <div id="seat-pov-banner" class="seat-pov-banner" style="display:none;">
+      <div class="pov-info-badge">
+        <span class="pov-icon">🪑</span>
+        <span id="pov-seat-label" class="pov-title">O'rindiq: C-6</span>
+        <span class="pov-divider">•</span>
+        <span id="pov-distance-label" class="pov-dist">Ekrangacha masofa: 14 m</span>
+        <span class="pov-hint">(Burilish uchun sichqonchani suring)</span>
+      </div>
+      <button id="exit-pov-btn" class="exit-pov-btn">
+        <span>🔙</span>
+        <span>Zal ko'rinishiga qaytish</span>
+      </button>
+    </div>
+
+    <!-- Main Viewport Overlay Controls -->
+    <main class="lumiere-main-area">
+      
+      <!-- Left Navigation Overlay (D-Pad, View Mode, Distance) -->
+      <div class="left-controls-overlay interactive">
+        <!-- View Mode Dropdown (Matching Video Frame 1 & 2) -->
+        <div class="mode-dropdown-card">
+          <label class="overlay-label">Camera Perspective</label>
+          <select id="view-mode-select" class="mode-select">
+            <option value="Auditorium overview" selected>Auditorium overview</option>
+            <option value="Facing the screen">Facing the screen</option>
+            <option value="Free flight">Free flight (Looking at seats)</option>
+            <option value="Screen view from seat">👁️ Screen view from seat</option>
+          </select>
+        </div>
+
+        <!-- Directional D-Pad Controls -->
+        <div class="dpad-box">
+          <div class="dpad-row">
+            <button id="dpad-up" class="dpad-btn" title="Pan Up">▲</button>
+          </div>
+          <div class="dpad-row">
+            <button id="dpad-left" class="dpad-btn" title="Pan Left">◀</button>
+            <button id="dpad-down" class="dpad-btn" title="Pan Down">▼</button>
+            <button id="dpad-right" class="dpad-btn" title="Pan Right">▶</button>
+          </div>
+          <div class="dpad-zoom-row">
+            <button id="dpad-zoom-in" class="dpad-zoom-btn" title="Zoom In">+</button>
+            <button id="dpad-zoom-out" class="dpad-zoom-btn" title="Zoom Out">−</button>
+          </div>
+        </div>
+
+        <!-- Distance & Height Dynamic Readout (Matching Video) -->
+        <div class="camera-info-card">
+          <div id="camera-distance-indicator" class="camera-distance-text">
+            Distance to screen 22 m • Height 3.6 m
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Ticket Booking Sidebar (Exact match from video) -->
+      <aside class="right-booking-sidebar interactive">
+        <!-- Film Header -->
+        <div class="film-header-section">
+          <div class="film-genre-tag" id="sidebar-film-genre">Sci-Fi • Drama</div>
+          <h2 class="film-title-text" id="sidebar-film-title">THE LAST LIGHT</h2>
+          <div class="demo-tag" id="sidebar-badge">Demo movie</div>
+        </div>
+
+        <!-- Show Date Picker -->
+        <div class="sidebar-section">
+          <label class="section-title">Show date</label>
+          <div class="date-cards-grid" id="sidebar-date-cards">
+            <!-- Injected via JS -->
+          </div>
+        </div>
+
+        <!-- Showtime Pills (Updates hanging 3D clock!) -->
+        <div class="sidebar-section">
+          <div style="display:flex; justify-content:space-between; align-items:baseline;">
+            <label class="section-title">Showtime</label>
+            <span class="clock-notice-text">The hanging clock updates too</span>
+          </div>
+          <div class="showtime-pills-row" id="sidebar-showtime-pills">
+            <!-- Injected via JS -->
+          </div>
+        </div>
+
+        <!-- Seat Selection -->
+        <div class="sidebar-section">
+          <div class="seat-select-header">
+            <span class="section-title">02 — Choose your seats</span>
+            <button id="open-seatmap-btn" class="seatmap-modal-btn">
+              <span>🗺️</span>
+              <span>Seat map</span>
+            </button>
+          </div>
+
+          <p class="seat-hint-text">
+            Click any available seat in the auditorium
+          </p>
+
+          <!-- Legend -->
+          <div class="seat-legend-row">
+            <span class="legend-dot dot-available"></span><span class="legend-lbl">Available</span>
+            <span class="legend-dot dot-selected"></span><span class="legend-lbl">Selected</span>
+            <span class="legend-dot dot-reserved"></span><span class="legend-lbl">Reserved</span>
+          </div>
+
+          <!-- Screen view from selected seat button (POV) -->
+          <button id="pov-preview-btn" class="pov-btn" style="display:none;">
+            👁️ Screen view from selected seat
+          </button>
+
+          <!-- Selected Seats List -->
+          <div id="selected-seats-badge-list" class="selected-seats-badges"></div>
+        </div>
+
+        <!-- Price & Booking CTA -->
+        <div class="sidebar-footer">
+          <div class="price-row">
+            <div>
+              <div class="price-per-ticket" id="per-ticket-price-text">Per ticket 95,000 UZS</div>
+              <div class="total-label">Total</div>
+            </div>
+            <div class="total-amount-display" id="sidebar-total-amount">0 UZS</div>
+          </div>
+
+          <button id="sidebar-select-seats-btn" class="gold-cta-btn" disabled>
+            Select seats &gt;
+          </button>
+        </div>
+      </aside>
+
+    </main>
+
+    <!-- Bottom Bar: Movie Carousel & FOV Slider -->
+    <footer class="lumiere-bottom-bar">
+      <!-- Keyboard Hint Text (Matching Video) -->
+      <div class="keyboard-hints-text">
+        WASD: Move &nbsp;|&nbsp; Q/E: Height &nbsp;|&nbsp; Drag: look around &nbsp;|&nbsp; Scroll: move forward/back
+      </div>
+
+      <!-- Bottom Movie Card Carousel (Exact match from Video Frame 1 & 2) -->
+      <div class="bottom-movie-carousel interactive">
+        <div class="carousel-counter-label" id="carousel-counter">
+          Choose a movie 1 / 3
+        </div>
+        <div class="carousel-cards-track" id="bottom-movies-track">
+          <!-- Injected via JS -->
+        </div>
+      </div>
+
+      <!-- Right Field of View Slider (Exact match from Video Frame 1) -->
+      <div class="bottom-fov-control interactive">
+        <span class="fov-label">Field of view</span>
+        <input type="range" id="fov-slider" class="fov-range" min="38" max="85" value="58">
+        <span id="fov-value" class="fov-num">58°</span>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Interactive 2D "Your seat, your view" Seat Map Modal (Exact Match Frame 4!) -->
+  <div id="seatmap-modal" class="modal-overlay">
+    <div class="seatmap-modal-box">
+      <!-- Modal Header -->
+      <div class="seatmap-header">
+        <div>
+          <div class="seatmap-subhead">Choose from the map</div>
+          <h2 class="seatmap-title">Your seat, your view</h2>
+          <div class="seatmap-film-info" id="seatmap-modal-subinfo">
+            The Last Light • October 29 • 13:00 • 0 selected seats
+          </div>
+        </div>
+        <button id="close-seatmap-btn" class="close-modal-icon-btn">✕</button>
+      </div>
+
+      <!-- Curved Cinema Screen Indicator (Matching Video Frame 4) -->
+      <div class="seatmap-screen-bar-container">
+        <div class="curved-screen-bar"></div>
+        <span class="curved-screen-text">Cinema screen</span>
+      </div>
+
+      <!-- 2D Interactive Seating Grid (Rows A to J x 11 Seats) -->
+      <div class="seatmap-grid-container" id="seatmap-interactive-grid">
+        <!-- Injected via JS -->
+      </div>
+
+      <!-- Modal Legend -->
+      <div class="seatmap-modal-legend">
+        <div class="modal-leg-item"><span class="m-dot dot-available"></span><span>Available</span></div>
+        <div class="modal-leg-item"><span class="m-dot dot-selected"></span><span>Selected</span></div>
+        <div class="modal-leg-item"><span class="m-dot dot-reserved"></span><span>Reserved</span></div>
+      </div>
+
+      <!-- Modal Bottom Confirm Button (Matching Video Frame 4) -->
+      <button id="confirm-seatmap-btn" class="gold-cta-btn">
+        Confirm seats &amp; return to auditorium
+      </button>
+    </div>
+  </div>
+
+  <!-- Final Checkout & E-Ticket Modal -->
+  <div id="checkout-modal" class="modal-overlay">
+    <div class="checkout-modal-box">
+      <h3 style="font-family:'Cinzel', serif; font-size:1.35rem; color:#d4af37; letter-spacing:1px; margin-bottom:12px;">
+        LUMIERE GRAND CINEMA • RESERVATION
+      </h3>
+
+      <div id="checkout-receipt-content" class="checkout-receipt">
+        <!-- Injected via JS -->
+      </div>
+
+      <div class="checkout-actions">
+        <button id="cancel-checkout-btn" class="btn-cancel">Cancel</button>
+        <button id="pay-confirm-btn" class="gold-cta-btn" style="width:auto; padding:10px 24px;">Confirm &amp; Issue Pass</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script type="module" src="/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+{
+  "name": "cinema-room-3d",
+  "version": "1.0.0",
+  "description": "3D Cinema Room with Node.js Architecture, Parallax Scrolling & Three.js",
+  "main": "server/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "build": "echo 'Build complete'"
+  },
+  "keywords": [
+    "threejs",
+    "3d",
+    "cinema",
+    "parallax",
+    "nodejs",
+    "express"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
+  }
+}
+
